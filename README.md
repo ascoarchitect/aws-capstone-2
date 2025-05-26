@@ -336,14 +336,14 @@ This project is designed with cost optimisation in mind:
 
 ## Features
 
-- ✅ Automated environment setup with Docker image pre-building
-- ✅ Containerised DOS games (DOOM and Civilization) with stats API
-- ✅ Container registry integration (ECR) with multi-image support
-- ✅ EKS cluster with spot instances
-- ✅ Backend PostgreSQL database for game statistics
-- ✅ Auto-scaling capabilities (HPA)
-- ✅ Blue/green deployment for zero-downtime game switching
-- ✅ Cost-optimised for development
+✅ Automated environment setup with Docker image pre-building
+✅ Containerised DOS games (DOOM and Civilization) with stats API
+✅ Container registry integration (ECR) with multi-image support
+✅ EKS cluster with spot instances
+✅ Backend PostgreSQL database for game statistics
+✅ Auto-scaling capabilities (HPA)
+✅ Blue/green deployment for zero-downtime game switching
+✅ Cost-optimised for development
 
 ## Workflow
 
@@ -351,14 +351,6 @@ This project is designed with cost optimisation in mind:
 2. **Deploy Phase**: Create EKS cluster and deploy applications
 3. **Switch Phase**: Blue/green deployment between games
 4. **Destroy Phase**: Clean up all AWS resources
-
-## Grading Criteria Coverage
-
-1. **Environment Setup (20 points)**: Automated via bootstrap.sh with Docker image building
-2. **Containerisation (20 points)**: Multiple Docker images (games + API) stored in ECR
-3. **EKS Deployment (10 points)**: EKS 1.32 with t3.medium spot instances
-4. **Application Deployment (40 points)**: Full stack with database and API
-5. **Blue/Green Updates (10 points)**: Switch between games seamlessly
 
 ## Architecture
 
