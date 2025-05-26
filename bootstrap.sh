@@ -163,7 +163,7 @@ else
 fi
 
 # Get ECR login token
-run_with_spinner "Logging into ECR..." "aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"
+run_with_spinner "Logging into ECR..." "aws ecr get-login-password --region $REGION | sudo docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"
 
 # Build and push Docker images
 print_info "Building and pushing Docker images..."
@@ -174,7 +174,7 @@ print_info "Building stats API image..."
 cd docker/stats-api
 run_with_spinner "Building stats API Docker image..." "sudo docker build --platform linux/amd64 -t dos-games-stats:latest . --quiet"
 run_with_spinner "Tagging stats API image..." "sudo docker tag dos-games-stats:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dos-games-stats:latest"
-run_with_spinner "Pushing stats API image to ECR..." "docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dos-games-stats:latest"
+run_with_spinner "Pushing stats API image to ECR..." "sudo docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dos-games-stats:latest"
 cd ../..
 
 # Build game images
@@ -189,8 +189,8 @@ cd ../..
 
 # Tag and push images to ECR
 print_info "Pushing images to ECR..."
-run_with_spinner "Tagging and pushing DOOM image..." "sudo docker tag $REPO_NAME:doom $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom && docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom"
-run_with_spinner "Tagging and pushing Civilization image..." "sudo docker tag $REPO_NAME:civ $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ && docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ"
+run_with_spinner "Tagging and pushing DOOM image..." "sudo docker tag $REPO_NAME:doom $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom && sudo docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom"
+run_with_spinner "Tagging and pushing Civilization image..." "sudo docker tag $REPO_NAME:civ $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ && sudo docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ"
 
 echo ""
 print_status "All Docker images built and pushed to ECR successfully!"
