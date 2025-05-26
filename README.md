@@ -7,7 +7,6 @@ This project demonstrates a complete Kubernetes deployment on AWS EKS, featuring
 ```
 aws-capstone-2/
 ├── README.md            # This comprehensive guide
-├── TESTING.md          # Testing procedures and validation
 ├── bootstrap.sh        # Install prerequisites, build and push Docker images
 ├── deploy.sh           # Deploy the application to EKS
 ├── destroy.sh          # Clean up all resources
