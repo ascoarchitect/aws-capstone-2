@@ -81,7 +81,7 @@ run_with_spinner() {
 run_with_spinner "Updating package manager..." "sudo yum update -y -q"
 
 # Install essential tools first
-run_with_spinner "Installing essential tools..." "sudo yum install -y curl wget tar gzip which git"
+run_with_spinner "Installing essential tools..." "sudo yum install -y wget unzip"
 
 # Install Docker
 if command_exists docker; then
@@ -172,25 +172,25 @@ echo ""
 # Build stats API image first
 print_info "Building stats API image..."
 cd docker/stats-api
-run_with_spinner "Building stats API Docker image..." "docker build --platform linux/amd64 -t dos-games-stats:latest . --quiet"
-run_with_spinner "Tagging stats API image..." "docker tag dos-games-stats:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dos-games-stats:latest"
+run_with_spinner "Building stats API Docker image..." "sudo docker build --platform linux/amd64 -t dos-games-stats:latest . --quiet"
+run_with_spinner "Tagging stats API image..." "sudo docker tag dos-games-stats:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dos-games-stats:latest"
 run_with_spinner "Pushing stats API image to ECR..." "docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/dos-games-stats:latest"
 cd ../..
 
 # Build game images
 print_info "Building game images..."
 cd docker/doom
-run_with_spinner "Building DOOM Docker image..." "docker build --platform linux/amd64 -t $REPO_NAME:doom . --quiet"
+run_with_spinner "Building DOOM Docker image..." "sudo docker build --platform linux/amd64 -t $REPO_NAME:doom . --quiet"
 cd ../..
 
 cd docker/civ
-run_with_spinner "Building Civilization Docker image..." "docker build --platform linux/amd64 -t $REPO_NAME:civ . --quiet"
+run_with_spinner "Building Civilization Docker image..." "sudo docker build --platform linux/amd64 -t $REPO_NAME:civ . --quiet"
 cd ../..
 
 # Tag and push images to ECR
 print_info "Pushing images to ECR..."
-run_with_spinner "Tagging and pushing DOOM image..." "docker tag $REPO_NAME:doom $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom && docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom"
-run_with_spinner "Tagging and pushing Civilization image..." "docker tag $REPO_NAME:civ $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ && docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ"
+run_with_spinner "Tagging and pushing DOOM image..." "sudo docker tag $REPO_NAME:doom $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom && docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom"
+run_with_spinner "Tagging and pushing Civilization image..." "sudo docker tag $REPO_NAME:civ $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ && docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ"
 
 echo ""
 print_status "All Docker images built and pushed to ECR successfully!"
@@ -209,10 +209,5 @@ print_info "Docker images built and pushed to ECR:"
 echo "   - $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom"
 echo "   - $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ"
 echo "   - $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$STATS_REPO_NAME:latest"
-echo ""
-print_info "To test locally with database:"
-echo "   1. docker run --name postgres -e POSTGRES_PASSWORD=gamepass123 -e POSTGRES_USER=gameuser -e POSTGRES_DB=gamedb -p 5432:5432 -d postgres:17-alpine"
-echo "   2. docker run --rm -p 8000:8000 -e DB_HOST=host.docker.internal $REPO_NAME:doom"
-echo "   3. Visit http://localhost:8000"
 echo ""
 print_info "All Docker images are now ready for EKS deployment!"

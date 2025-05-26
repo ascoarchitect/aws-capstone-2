@@ -48,7 +48,7 @@ This project is designed to be deployed from an Amazon Linux 2 EC2 instance rath
 2. Navigate to EC2 Dashboard
 3. Click "Launch Instance"
 4. Give the instance the name 'Kubernetes-Deployment-VM'
-5. Choose "Amazon Linux 2 AMI"
+5. Choose "Amazon Linux 2023 AMI"
 6. Select instance type (t2.micro recommended for this project)
 7. Configure instance details:
    - Network: Default VPC
@@ -56,7 +56,7 @@ This project is designed to be deployed from an Amazon Linux 2 EC2 instance rath
 8. Add storage (20 GB recommended for Docker images and builds)
 9. Add tags as required
 10. Configure Security Group:
-    - Allow SSH (port 22) from your IP
+    - Allow SSH (port 22) from 0.0.0.0/0
     - Allow HTTP (port 8000) for testing local Docker container if required
 11. Proceed without key pair then launch instance
 12. Wait for the instance to initialise
