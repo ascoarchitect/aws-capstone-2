@@ -522,5 +522,3 @@ This project is licensed under the Apache License 2.0 - see the `LICENSE` file f
 - **Cleanup**: Always run `./destroy.sh` when finished to avoid unnecessary charges
 - **Spot Instances**: May be interrupted; use only for development/learning
 - **Resource Limits**: Default configuration uses minimal resources for cost optimisation
-
-Remember to run `./destroy.sh` when you've completed the project to avoid incurring unnecessary AWS charges. The project is designed for learning and development purposes with cost optimisation as a primary consideration.
