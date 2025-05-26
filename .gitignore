@@ -1,0 +1,21 @@
+# AWS credentials
+.aws/
+*.pem
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# Docker
+*.tar
+*.tar.gz
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,60 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: dos-games
+  region: eu-west-1
+  version: "1.32"
+
+kubernetesNetworkConfig: 
+  serviceIPv4CIDR: 10.100.0.0/16
+
+availabilityZones: ["eu-west-1a", "eu-west-1b"]
+
+iam:
+  withOIDC: true
+
+  serviceAccounts:
+  - metadata:
+      name: cluster-autoscaler-dos-games
+      namespace: kube-system
+    wellKnownPolicies:
+      autoScaler: true
+  - metadata:
+      name: aws-load-balancer-controller-dos-games
+      namespace: kube-system
+    wellKnownPolicies:
+      awsLoadBalancerController: true
+
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+  - name: amazon-cloudwatch-observability
+    version: latest
+ 
+managedNodeGroups:
+  - name: nodegroup-1
+    spot: true
+    instanceTypes: ["t3.medium"]
+    minSize: 1
+    desiredCapacity: 2
+    maxSize: 3
+    volumeEncrypted: true
+    privateNetworking: true
+    iam:
+      withAddonPolicies:
+        albIngress: true
+        cloudWatch: true
+        autoScaler: true
+        ebs: true
+        xRay: true
+
+cloudWatch:
+    clusterLogging:
+        enableTypes: ["api", "audit", "authenticator", "controllerManager", "scheduler"]

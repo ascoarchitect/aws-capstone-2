@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DOS Game Platform - CIVILIZATION</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        #stats-container {
+            margin-bottom: 20px;
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #stats-table {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            background-color: #333;
+        }
+        
+        #stats-table th, #stats-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #555;
+        }
+        
+        #stats-table th {
+            background-color: #444;
+            font-weight: bold;
+        }
+        
+        #stats-table td {
+            background-color: #2a2a2a;
+        }
+        
+        #game-title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        #game-container {
+            text-align: center;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        canvas {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #444;
+            margin: 0 auto;
+            display: block;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+        
+        .error {
+            color: #f44336;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+    <script src="js-dos.js"></script>
+</head>
+<body class="civ-game">
+    <div id="stats-container">
+        <h2 style="text-align: center;">Game Run Statistics</h2>
+        <div id="stats-content" class="loading">Loading statistics...</div>
+    </div>
+    
+    <div id="game-container">
+        <h1 id="game-title">CIVILIZATION</h1>
+        <canvas id="jsdos-civ" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        // Game constants
+        const GAME_NAME = 'CIVILIZATION';
+        const GAME_ARGS = 'CIV.EXE';
+        
+        // Function to fetch and display statistics
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                // Create a map for easier lookup
+                const statsMap = {};
+                stats.forEach(stat => {
+                    statsMap[stat.game_name] = stat.play_count;
+                });
+                
+                let tableHTML = '<table id="stats-table">';
+                tableHTML += '<tr><th>DOOM</th><th>CIVILIZATION</th></tr>';
+                tableHTML += '<tr>';
+                
+                // Display stats in consistent order: DOOM first, then CIVILIZATION
+                tableHTML += `<td>${statsMap['DOOM'] || 0}</td>`;
+                tableHTML += `<td>${statsMap['CIVILIZATION'] || 0}</td>`;
+                
+                tableHTML += '</tr></table>';
+                
+                document.getElementById('stats-content').innerHTML = tableHTML;
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+                document.getElementById('stats-content').innerHTML = 
+                    '<div class="error">Failed to load statistics</div>';
+            }
+        }
+        
+        // Function to increment play count
+        async function recordPlay() {
+            try {
+                await fetch(`/api/play/${GAME_NAME}`, { method: 'POST' });
+                // Update stats after recording
+                await updateStats();
+            } catch (error) {
+                console.error('Failed to record play:', error);
+            }
+        }
+        
+        // Initial stats load
+        updateStats();
+        
+        // Update stats every 5 seconds
+        setInterval(updateStats, 5000);
+        
+        // Initialize DOS game
+        Dos(document.getElementById("jsdos-civ"), {
+        }).ready((fs, main) => {
+            fs.extract("civ-game.zip").then(() => {
+                // Record that the game was played
+                recordPlay();
+                
+                // Start the game
+                main(["-c", GAME_ARGS]);
+            });
+        });
+    </script>
+</body>
+</html>
