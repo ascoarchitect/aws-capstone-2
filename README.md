@@ -326,14 +326,14 @@ kubectl logs <pod-name> -n dos-game
 
 ## Features
 
-✅ Automated environment setup with Docker image pre-building
-✅ Containerised DOS games (DOOM and Civilization) with stats API
-✅ Container registry integration (ECR) with multi-image support
-✅ EKS cluster with spot instances
-✅ Backend PostgreSQL database for game statistics
-✅ Auto-scaling capabilities (HPA)
-✅ Blue/green deployment for zero-downtime game switching
-✅ Cost-optimised for development
+- Automated environment setup with Docker image pre-building
+- Containerised DOS games (DOOM and Civilization) with stats API
+- Container registry integration (ECR) with multi-image support
+- EKS cluster with spot instances
+- Backend PostgreSQL database for game statistics
+- Auto-scaling capabilities (HPA)
+- Blue/green deployment for zero-downtime game switching
+- Cost-optimised for development
 
 ## Workflow
 
