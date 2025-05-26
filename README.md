@@ -484,7 +484,7 @@ flowchart TD
    - Connects to PostgreSQL database
 
 3. **Database Container** (Persistent):
-   - Image: `postgres:15-alpine`
+   - Image: `postgres:17-alpine`
    - Remains running during game switches
    - Stores persistent game data and statistics
    - Uses persistent volumes for data retention
