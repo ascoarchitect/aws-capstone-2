@@ -324,16 +324,6 @@ kubectl describe pod <pod-name> -n dos-game
 kubectl logs <pod-name> -n dos-game
 ```
 
-## Cost Optimisation
-
-This project is designed with cost optimisation in mind:
-
-- **Spot Instances**: Uses EC2 spot instances for 60-90% cost savings
-- **Right-sizing**: t3.medium instances appropriate for the workload
-- **Auto-scaling**: Scales down during low usage periods
-- **Regional Deployment**: Single region deployment to avoid data transfer costs
-- **Resource Cleanup**: Comprehensive destroy script prevents lingering resources
-
 ## Features
 
 ✅ Automated environment setup with Docker image pre-building
