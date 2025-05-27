@@ -26,13 +26,19 @@ spec:
           value: postgres
         - name: DB_NAME
           valueFrom:
-            configMapKeyRef:
-              name: game-config
-              key: database_name
+            secretKeyRef:
+              name: postgres-secret
+              key: database
         - name: DB_USER
-          value: gameuser
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: username
         - name: DB_PASSWORD
-          value: gamepass123
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
         resources:
           requests:
             cpu: 100m

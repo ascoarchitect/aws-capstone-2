@@ -254,6 +254,9 @@ if [ "$IS_SWITCH" = false ]; then
     # Apply PVC
     apply_with_spinner "k8s/postgres-pvc.yaml" "Creating PVC..."
 
+    # Apply secrets
+    apply_with_spinner "k8s/postgres-secrets.yaml" "Applying secrets..."
+
     # Deploy database (persistent - no variables needed)
     apply_with_spinner "k8s/database.yaml" "Deploying database..."
 

@@ -139,12 +139,12 @@ else
 fi
 
 # Delete ECR repository
-print_info "Deleting ECR repository..."
+print_info "Deleting games ECR repository..."
 if aws ecr describe-repositories --repository-names $REPO_NAME --region $REGION >/dev/null 2>&1; then
-    run_with_spinner "Deleting ECR repository..." "aws ecr delete-repository --repository-name $REPO_NAME --region $REGION --force"
-    print_status "ECR repository deleted"
+    run_with_spinner "Deleting games ECR repository..." "aws ecr delete-repository --repository-name $REPO_NAME --region $REGION --force"
+    print_status "Games ECR repository deleted"
 else
-    print_info "ECR repository already deleted"
+    print_info "Games ECR repository already deleted"
 fi
 
 # Delete stats API ECR repository
@@ -158,7 +158,7 @@ fi
 
 # Clean up local Docker images
 print_info "Cleaning up local Docker images..."
-run_with_spinner "Removing local Docker images..." "docker rmi dos-games:doom dos-games:civ dos-games-stats:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$STATS_REPO_NAME:latest 2>/dev/null || true"
+run_with_spinner "Removing local Docker images..." "sudo docker rmi dos-games:doom dos-games:civ dos-games-stats:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$STATS_REPO_NAME:latest 2>/dev/null || true"
 print_status "Local Docker images cleaned"
 
 # Remove kubeconfig context
