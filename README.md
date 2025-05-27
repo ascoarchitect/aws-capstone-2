@@ -470,9 +470,6 @@ architecture-beta
     group internet(cloud)[Internet Users]
     group aws(cloud)[AWS Cloud]
     
-    service browser(internet)[Web Browser] in internet
-    service devOps(internet)[DevOps Engineer] in internet
-    
     group vpc(cloud)[VPC] in aws
     group publicSubnets(cloud)[Public Subnets] in vpc
     group privateSubnets(cloud)[Private Subnets] in vpc
