@@ -499,10 +499,7 @@ architecture-beta
     group monitoring(cloud)[AWS Monitoring] in aws
     service cloudwatch(server)[CloudWatch] in monitoring
     
-    browser:B --> T:istioGW
     istioGW:B --> T:gamePod
-    
-    devOps:B --> T:istioGW
     istioGW:R --> L:kiali
     istioGW:R --> L:grafana
     istioGW:R --> L:jaeger
