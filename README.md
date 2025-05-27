@@ -497,12 +497,6 @@ flowchart TD
 - **Encrypted Storage**: EBS volumes are encrypted at rest
 - **IAM Roles**: Least privilege IAM roles for EKS services
 
-## Development and Testing
-
-For development and testing procedures, see:
-- `IMPLEMENTATION.md` - Technical implementation details
-- `TESTING.md` - Testing procedures and validation steps
-
 ## Support and Documentation
 
 - **Issues**: Report issues in the project repository
