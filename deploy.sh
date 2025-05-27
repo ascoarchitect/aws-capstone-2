@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# AWS Kubernetes Capstone 2 - Deploy Script
-# This script deploys the DOS games application to EKS
+# AWS Kubernetes Capstone 2 - Deploy Script with Istio Service Mesh
+# This script deploys the DOS games application to EKS with Istio Service Mesh
 clear
 set -e
 
@@ -76,11 +76,17 @@ run_with_spinner() {
 
 # Check command line arguments
 if [ $# -eq 0 ]; then
-    print_error "No game specified"
-    echo "Usage: $0 [doom|civ|switch]"
-    echo "  doom   - Deploy with DOOM"
-    echo "  civ    - Deploy with Civilization"
-    echo "  switch - Switch between games (blue/green)"
+    print_error "No command specified"
+    echo "Usage: $0 [doom|civ|switch|kiali|grafana|jaeger]"
+    echo "  Game Commands:"
+    echo "    doom     - Deploy with DOOM"
+    echo "    civ      - Deploy with Civilization"
+    echo "    switch   - Switch between games (blue/green)"
+    echo ""
+    echo "  Observability Commands:"
+    echo "    kiali    - Open Kiali dashboard (service mesh visualization)"
+    echo "    grafana  - Open Grafana dashboard (metrics and monitoring)"
+    echo "    jaeger   - Open Jaeger dashboard (distributed tracing)"
     exit 1
 fi
 
@@ -89,6 +95,192 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 REGION=$(aws configure get region)
 CLUSTER_NAME="dos-games"
 NAMESPACE="dos-game"
+ISTIO_RELEASE="1.26"
+
+# Function to check if Istio is installed and ready
+check_istio_ready() {
+    if ! kubectl get namespace istio-system >/dev/null 2>&1; then
+        print_error "Istio is not installed. Please run a deployment first."
+        return 1
+    fi
+    
+    if ! kubectl get pods -n istio-system -l app=istiod --field-selector=status.phase=Running | grep -q istiod; then
+        print_error "Istio control plane is not ready. Please wait for deployment to complete."
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to check if a service is available
+check_service_available() {
+    local service_name=$1
+    local namespace=$2
+    
+    if ! kubectl get svc "$service_name" -n "$namespace" >/dev/null 2>&1; then
+        return 1
+    fi
+    
+    if ! kubectl get pods -n "$namespace" -l "app=$service_name" --field-selector=status.phase=Running | grep -q "$service_name"; then
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to get external dashboard URLs
+get_dashboard_urls() {
+    local gateway_url=$1
+    if [ ! -z "$gateway_url" ]; then
+        echo "  Kiali:   http://$gateway_url:8080"
+        echo "  Grafana: http://$gateway_url:8081"
+        echo "  Jaeger:  http://$gateway_url:8082"
+    else
+        echo "  Gateway URL not available yet - dashboards will be accessible once LoadBalancer is ready"
+    fi
+}
+
+# Function to open Kiali dashboard
+open_kiali() {
+    print_header "Kiali Dashboard"
+    
+    if ! check_istio_ready; then
+        exit 1
+    fi
+    
+    if ! check_service_available "kiali" "istio-system"; then
+        print_error "Kiali is not available. Installing Kiali..."
+        run_with_spinner "Installing Kiali..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/kiali.yaml"
+        
+        print_info "Waiting for Kiali to be ready..."
+        run_with_spinner "Waiting for Kiali..." "kubectl wait --for=condition=available --timeout=300s deployment/kiali -n istio-system"
+    fi
+    
+    # Ensure observability gateway is applied
+    run_with_spinner "Applying observability gateway..." "kubectl apply -f istio/observability-gateway.yaml"
+    
+    # Get gateway URL
+    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+    
+    print_status "Kiali is ready"
+    print_info "Kiali provides service mesh visualization, traffic flow, and configuration validation"
+    echo ""
+    
+    if [ ! -z "$URL" ]; then
+        print_status "Kiali dashboard is accessible externally at:"
+        echo "  🌐 http://$URL:8080"
+        echo ""
+    else
+        print_info "LoadBalancer URL not ready yet. You can also access via port-forward:"
+        print_info "Dashboard will be available at: http://localhost:20001"
+        print_info "Press Ctrl+C to stop the port-forward"
+        echo ""
+        
+        # Start port-forward as fallback
+        kubectl port-forward -n istio-system svc/kiali 20001:20001
+    fi
+}
+
+# Function to open Grafana dashboard
+open_grafana() {
+    print_header "Grafana Dashboard"
+    
+    if ! check_istio_ready; then
+        exit 1
+    fi
+    
+    if ! check_service_available "grafana" "istio-system"; then
+        print_error "Grafana is not available. Installing Grafana..."
+        run_with_spinner "Installing Prometheus..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/prometheus.yaml"
+        run_with_spinner "Installing Grafana..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/grafana.yaml"
+        
+        print_info "Waiting for Grafana to be ready..."
+        run_with_spinner "Waiting for Grafana..." "kubectl wait --for=condition=available --timeout=300s deployment/grafana -n istio-system"
+    fi
+    
+    # Ensure observability gateway is applied
+    run_with_spinner "Applying observability gateway..." "kubectl apply -f istio/observability-gateway.yaml"
+    
+    # Get gateway URL
+    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+    
+    print_status "Grafana is ready"
+    print_info "Grafana provides metrics visualization and monitoring dashboards"
+    echo ""
+    
+    if [ ! -z "$URL" ]; then
+        print_status "Grafana dashboard is accessible externally at:"
+        echo "  🌐 http://$URL:8081"
+        echo ""
+        print_info "Default credentials: admin/admin"
+    else
+        print_info "LoadBalancer URL not ready yet. You can also access via port-forward:"
+        print_info "Dashboard will be available at: http://localhost:3000"
+        print_info "Default credentials: admin/admin"
+        print_info "Press Ctrl+C to stop the port-forward"
+        echo ""
+        
+        # Start port-forward as fallback
+        kubectl port-forward -n istio-system svc/grafana 3000:3000
+    fi
+}
+
+# Function to open Jaeger dashboard
+open_jaeger() {
+    print_header "Jaeger Dashboard"
+    
+    if ! check_istio_ready; then
+        exit 1
+    fi
+    
+    if ! check_service_available "jaeger" "istio-system"; then
+        print_error "Jaeger is not available. Installing Jaeger..."
+        run_with_spinner "Installing Jaeger..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/jaeger.yaml"
+        
+        print_info "Waiting for Jaeger to be ready..."
+        run_with_spinner "Waiting for Jaeger..." "kubectl wait --for=condition=available --timeout=300s deployment/jaeger -n istio-system"
+    fi
+    
+    # Ensure observability gateway is applied
+    run_with_spinner "Applying observability gateway..." "kubectl apply -f istio/observability-gateway.yaml"
+    
+    # Get gateway URL
+    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+    
+    print_status "Jaeger is ready"
+    print_info "Jaeger provides distributed tracing and request flow analysis"
+    echo ""
+    
+    if [ ! -z "$URL" ]; then
+        print_status "Jaeger dashboard is accessible externally at:"
+        echo "  🌐 http://$URL:8082"
+        echo ""
+    else
+        print_info "LoadBalancer URL not ready yet. You can also access via port-forward:"
+        print_info "Dashboard will be available at: http://localhost:16686"
+        print_info "Press Ctrl+C to stop the port-forward"
+        echo ""
+        
+        # Start port-forward as fallback
+        kubectl port-forward -n istio-system svc/jaeger 16686:16686
+    fi
+}
+
+# Handle observability dashboard commands
+case "$GAME" in
+    "kiali")
+        open_kiali
+        exit 0
+        ;;
+    "grafana")
+        open_grafana
+        exit 0
+        ;;
+    "jaeger")
+        open_jaeger
+        exit 0
+        ;;
+esac
 
 # Function to get current game
 get_current_game() {
@@ -110,9 +302,9 @@ if [ "$GAME" == "switch" ]; then
 fi
 
 # Validate game selection
-if [ "$GAME" != "doom" ] && [ "$GAME" != "civ" ]; then
-    print_error "Invalid game: $GAME"
-    echo "Valid options: doom, civ, switch"
+if [ "$GAME" != "doom" ] && [ "$GAME" != "civ" ] && [ "$GAME" != "switch" ]; then
+    print_error "Invalid command: $GAME"
+    echo "Valid options: doom, civ, switch, kiali, grafana, jaeger"
     exit 1
 fi
 
@@ -130,6 +322,29 @@ fi
 
 # Update kubeconfig
 run_with_spinner "Updating kubeconfig..." "aws eks update-kubeconfig --name $CLUSTER_NAME --region $REGION"
+
+# Install and configure Istio Service Mesh
+print_info "Setting up Istio Service Mesh..."
+
+# Check if Istio is already installed
+if kubectl get namespace istio-system >/dev/null 2>&1; then
+    print_status "Istio is already installed"
+else
+    print_info "Installing Istio (this may take 5-10 minutes)..."
+    run_with_spinner "Installing Istio control plane..." "istioctl install --set values.defaultRevision=default -y"
+    
+    # Install Istio addons for observability
+    run_with_spinner "Installing Istio addons..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/prometheus.yaml"
+    run_with_spinner "Installing Kiali..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/kiali.yaml"
+    run_with_spinner "Installing Jaeger..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/jaeger.yaml"
+    run_with_spinner "Installing Grafana..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/grafana.yaml"
+
+    # Wait for Istio components to be ready
+    print_info "Waiting for Istio components to be ready..."
+    run_with_spinner "Waiting for Istio control plane..." "kubectl wait --for=condition=ready pod -l app=istiod -n istio-system --timeout=300s"
+    
+    print_status "Istio Service Mesh installed successfully"
+fi
 
 # Verify ECR repositories and images exist
 print_info "Verifying ECR repositories and images..."
@@ -245,11 +460,11 @@ if [ "$IS_SWITCH" = false ]; then
     # Create namespace
     apply_with_spinner "k8s/namespace.yaml" "Creating namespace..."
 
+    # Deploy cluster autoscaler (infrastructure component)
+    apply_with_spinner "k8s/cluster-autoscaler.yaml" "Deploying cluster autoscaler..."
+
     # Apply ConfigMap
     apply_with_spinner "k8s/configmap.yaml" "Applying ConfigMap..."
-
-    # Apply network policy
-    apply_with_spinner "k8s/network-policy.yaml" "Applying network policy..."
 
     # Apply PVC
     apply_with_spinner "k8s/postgres-pvc.yaml" "Creating PVC..."
@@ -274,6 +489,14 @@ if [ "$IS_SWITCH" = false ]; then
     # Apply game service (persistent)
     apply_with_spinner "k8s/game-service.yaml" "Applying game service..."
 
+    # Apply Istio configurations
+    print_info "Deploying Istio Service Mesh configurations..."
+    apply_with_spinner "istio/gateway.yaml" "Applying Istio Gateway..."
+    apply_with_spinner "istio/destination-rules.yaml" "Applying Destination Rules..."
+    apply_with_spinner "istio/security-policies.yaml" "Applying Security Policies..."
+    apply_with_spinner "istio/telemetry.yaml" "Applying Telemetry Configuration..."
+    apply_with_spinner "istio/observability-gateway.yaml" "Applying Observability Gateway..."
+
     # Apply HPAs (persistent)
     apply_with_spinner "k8s/game-hpa.yaml" "Applying game HPA..."
     apply_with_spinner "k8s/stats-api-hpa.yaml" "Applying stats API HPA..."
@@ -289,10 +512,10 @@ substitute_and_apply "k8s/game-deployment.yaml" "Deploying game application..."
 print_info "Waiting for game deployment to be ready..."
 run_with_spinner "Waiting for game deployment..." "kubectl wait --for=condition=available --timeout=300s deployment/game-deployment -n $NAMESPACE"
 
-# Get service URL
-print_info "Waiting for LoadBalancer to be ready..."
+# Get Istio Gateway URL
+print_info "Waiting for Istio Gateway to be ready..."
 for i in {1..60}; do
-    URL=$(kubectl get svc game-service -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
     if [ ! -z "$URL" ]; then
         break
     fi
@@ -300,10 +523,10 @@ for i in {1..60}; do
 done
 
 if [ -z "$URL" ]; then
-    print_error "LoadBalancer URL not available after 5 minutes"
-    print_info "Check service status with: kubectl get svc -n $NAMESPACE"
+    print_error "Istio Gateway URL not available after 5 minutes"
+    print_info "Check gateway status with: kubectl get svc -n istio-system"
 else
-    print_status "LoadBalancer is ready"
+    print_status "Istio Gateway is ready"
     
     # Check if the game is actually live and responding
     echo ""
@@ -346,21 +569,105 @@ if [ ! -z "$URL" ]; then
     else
         print_info "⏳ Game may still be starting up - check the URL above"
     fi
+    echo ""
+    print_info "🔍 Observability Dashboards (External Access):"
+    get_dashboard_urls "$URL"
 else
     print_info "LoadBalancer URL not yet available"
 fi
 
 echo ""
 print_info "Useful commands:"
+echo ""
+echo "  # Application Management"
 echo "  kubectl get all -n $NAMESPACE           # View all resources"
 echo "  kubectl get hpa -n $NAMESPACE           # View autoscaler status"
 echo "  kubectl logs -n $NAMESPACE -l app=dos-game      # View game logs"
 echo "  kubectl logs -n $NAMESPACE -l app=stats-api     # View API logs"
 echo "  kubectl logs -n $NAMESPACE -l app=postgres      # View DB logs"
+echo ""
+echo "  # Game Switching"
 if [ "$GAME" == "doom" ]; then
     echo "  ./deploy.sh civ                          # Switch to Civilization"
 else
     echo "  ./deploy.sh doom                         # Switch to DOOM"
 fi
 echo "  ./deploy.sh switch                       # Switch games (blue/green)"
+echo ""
+echo "  # Istio Service Mesh"
+echo "  kubectl get vs,dr,gw -n $NAMESPACE      # View Istio configs"
+echo "  kubectl get pods -n istio-system        # View Istio components"
+echo "  istioctl proxy-status                   # Check sidecar status"
+echo "  istioctl analyze                        # Analyze configuration"
+echo ""
+echo "  # Observability Dashboards (Easy Access)"
+echo "  ./deploy.sh kiali                        # Open Kiali dashboard (service mesh visualization)"
+echo "  ./deploy.sh grafana                      # Open Grafana dashboard (metrics and monitoring)"
+echo "  ./deploy.sh jaeger                       # Open Jaeger dashboard (distributed tracing)"
+echo ""
+echo "  # Manual Port-Forward (Alternative)"
+echo "  kubectl port-forward -n istio-system svc/kiali 20001:20001    # Manual Kiali access"
+echo "  kubectl port-forward -n istio-system svc/grafana 3000:3000    # Manual Grafana access"
+echo "  kubectl port-forward -n istio-system svc/jaeger 16686:16686   # Manual Jaeger access"
+echo ""
+echo "  # Cleanup"
 echo "  ./destroy.sh                             # Clean up all resources"
+
+# Function to apply canary deployment with traffic splitting
+apply_canary_deployment() {
+    local current_game=$1
+    local new_game=$2
+    local current_weight=$3
+    local new_weight=$4
+    
+    print_info "Applying canary deployment: $current_game($current_weight%) -> $new_game($new_weight%)"
+    
+    local temp_file="/tmp/canary-virtual-service.yaml"
+    
+    # Substitute variables for canary deployment
+    sed -e "s|\$CURRENT_GAME|$current_game|g" \
+        -e "s|\$NEW_GAME|$new_game|g" \
+        -e "s|\$CURRENT_WEIGHT|$current_weight|g" \
+        -e "s|\$NEW_WEIGHT|$new_weight|g" \
+        "istio/canary-virtual-service.yaml" > "$temp_file"
+    
+    # Apply the canary configuration
+    run_with_spinner "Applying canary traffic split..." "kubectl apply -f $temp_file"
+    
+    # Clean up
+    rm "$temp_file"
+}
+
+# Function to perform gradual canary rollout
+perform_canary_rollout() {
+    local current_game=$1
+    local new_game=$2
+    
+    print_info "Starting gradual canary rollout from $current_game to $new_game"
+    
+    # Stage 1: 90/10 split
+    apply_canary_deployment "$current_game" "$new_game" 90 10
+    print_info "Canary stage 1: 90% $current_game, 10% $new_game"
+    sleep 30
+    
+    # Stage 2: 70/30 split
+    apply_canary_deployment "$current_game" "$new_game" 70 30
+    print_info "Canary stage 2: 70% $current_game, 30% $new_game"
+    sleep 30
+    
+    # Stage 3: 50/50 split
+    apply_canary_deployment "$current_game" "$new_game" 50 50
+    print_info "Canary stage 3: 50% $current_game, 50% $new_game"
+    sleep 30
+    
+    # Stage 4: 20/80 split
+    apply_canary_deployment "$current_game" "$new_game" 20 80
+    print_info "Canary stage 4: 20% $current_game, 80% $new_game"
+    sleep 30
+    
+    # Stage 5: 0/100 split (complete switch)
+    apply_canary_deployment "$current_game" "$new_game" 0 100
+    print_info "Canary complete: 100% $new_game"
+    
+    print_status "Gradual canary rollout completed successfully"
+}
