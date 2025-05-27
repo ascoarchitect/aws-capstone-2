@@ -6,7 +6,7 @@ This project demonstrates a complete Kubernetes deployment on AWS EKS featuring 
 
 ```
 aws-capstone-2/
-├── README.md               # This comprehensive guide
+├── README.md
 ├── bootstrap.sh            # Install prerequisites, build and push Docker images (includes Istio CLI)
 ├── deploy.sh               # Deploy the application to EKS with Istio Service Mesh
 ├── destroy.sh              # Clean up all resources
@@ -31,7 +31,7 @@ aws-capstone-2/
 │   ├── ingress-gateway-service.yaml # Pre-configured observability ports
 │   └── canary-virtual-service.yaml # Canary deployment configuration
 ├── k8s/
-│   ├── namespace.yaml      # Kubernetes namespace (with Istio injection enabled)
+│   ├── namespace.yaml      # Kubernetes namespace
 │   ├── game-deployment.yaml# Game deployment
 │   ├── game-service.yaml   # ClusterIP service (replaces LoadBalancer)
 │   ├── database.yaml       # PostgreSQL for game stats
@@ -49,7 +49,7 @@ aws-capstone-2/
 
 ## Istio Service Mesh Integration
 
-This project uses **Istio Service Mesh** to replace traditional AWS Load Balancers with advanced traffic management, security, and observability features. Istio provides:
+This project uses Istio Service Mesh to replace traditional AWS Load Balancers with advanced traffic management, security, and observability features. Istio provides:
 
 ### 🔧 **Service Mesh Features**
 - **Traffic Management**: Advanced routing, load balancing, and circuit breaking
@@ -103,7 +103,6 @@ This project is designed to be deployed from an Amazon Linux 2 EC2 instance rath
 9. Add tags as required
 10. Configure Security Group:
     - Allow SSH (port 22) from 0.0.0.0/0
-    - Allow HTTP (port 8000) for testing local Docker container if required
 11. Proceed without key pair then launch instance
 12. Wait for the instance to initialise
 
@@ -196,8 +195,6 @@ The bootstrap script will:
 - Push all images to the ECR repositories
 - Verify the setup is complete
 
-**Note**: The Istio CLI (`istioctl`) is automatically installed during bootstrap. The project uses Istio v1.26.0 for advanced traffic management, security, and observability.
-
 **Note**: The bootstrap process may take 10-15 minutes as it downloads dependencies and builds multiple Docker images.
 
 ## Deployment Guide
@@ -245,8 +242,6 @@ kubectl get svc istio-ingressgateway -n istio-system
 # Open this URL in your browser to access the game
 ```
 
-**Istio Service Mesh Benefits**: The application now runs with automatic sidecar injection, providing enhanced security (mTLS), observability (distributed tracing), and traffic management capabilities.
-
 ### 4. Blue/Green Deployment (Game Switching)
 
 Switch between games with zero downtime:
@@ -264,7 +259,7 @@ Switch between games with zero downtime:
 
 ### 5. Access Observability Dashboards
 
-Istio provides powerful observability tools that are automatically installed and accessible externally via the Istio Gateway:
+Istio provides observability tools that are automatically installed and accessible externally via the Istio Gateway:
 
 **Dashboard URLs** (available after deployment):
 - **Kiali**: `http://[GATEWAY-URL]:8080` - Service mesh visualisation and configuration validation
@@ -288,7 +283,6 @@ kubectl port-forward -n istio-system svc/kiali 20001:20001    # Access at localh
 kubectl port-forward -n istio-system svc/grafana 3000:3000    # Access at localhost:3000  
 kubectl port-forward -n istio-system svc/jaeger 16686:16686   # Access at localhost:16686
 ```
-
 ### 6. Monitor the Deployment
 
 Check the status of the deployment:
@@ -455,22 +449,6 @@ kubectl logs -n istio-system -l app=istiod
 # Verify traffic flow
 istioctl proxy-config endpoint <pod-name>.dos-game
 ```
-
-## Features
-
-- Advanced traffic management, security, and observability
-- All pods automatically get Istio proxy sidecars
-- Kiali, Grafana, and Jaeger dashboards included
-- Automatic encryption between all services
-- Advanced load balancing and circuit breaking
-- Automated environment setup with Docker image pre-building
-- Containerised DOS games (DOOM and Civilization) with stats API
-- Container registry integration (ECR) with multi-image support
-- EKS cluster with spot instances
-- Backend PostgreSQL database for game statistics
-- Auto-scaling capabilities (HPA)
-- Blue/green deployment for zero-downtime game switching
-- Cost-optimised for development
 
 ## Workflow
 
@@ -699,43 +677,31 @@ flowchart TD
 
 1. **Game Container** (Variable): 
    - Image: `dos-games:doom` or `dos-games:civ`
-   - **Istio Sidecar**: Envoy proxy automatically injected
+   - Istio Sidecar: Envoy proxy automatically injected
    - Switches during blue/green deployments with Istio traffic management
    - Contains the DOS game, js-dos emulator, and nginx proxy
    - Separate containers and images for each game
-   - **mTLS Communication**: Automatic encryption with other services
+   - mTLS Communication: Automatic encryption with other services
 
 2. **Stats API Container** (Persistent):
    - Image: `dos-games-stats:latest`
-   - **Istio Sidecar**: Envoy proxy automatically injected
+   - Istio Sidecar: Envoy proxy automatically injected
    - Remains running during game switches
    - Node.js API for game statistics
-   - **Distributed Tracing**: Integrated with Jaeger for request tracking
-   - **mTLS Communication**: Secure connection to PostgreSQL
+   - Distributed Tracing: Integrated with Jaeger for request tracking
+   - mTLS Communication: Secure connection to PostgreSQL
 
 3. **Database Container** (Persistent):
    - Image: `postgres:17-alpine`
-   - **Istio Sidecar**: Envoy proxy automatically injected
+   - Istio Sidecar: Envoy proxy automatically injected
    - Remains running during game switches
    - Stores persistent game data and statistics
-   - **Service Mesh Security**: Protected by Istio authorisation policies
+   - Service Mesh Security: Protected by Istio authorisation policies
    - Uses persistent volumes for data retention
 
 4. **Observability Stack** (Istio System):
-   - **Kiali**: Service mesh visualisation and configuration management
-   - **Grafana**: Metrics dashboards with Prometheus data source
-   - **Jaeger**: Distributed tracing and request flow analysis
-   - **Prometheus**: Metrics collection from all Envoy sidecars
-   - **External Access**: All dashboards accessible via Istio Gateway on dedicated ports
-
-## Security Considerations
-
-- **Istio Mutual TLS**: Automatic encryption and authentication between all services
-- **Istio Authorisation Policies**: Fine-grained access control based on service identity
-- **Network Policies**: Kubernetes network policies restrict pod-to-pod communication
-- **Private Networking**: EKS worker nodes deployed in private subnets
-- **Security Groups**: Properly configured security groups for Istio Gateway and node groups
-- **RBAC**: Kubernetes Role-Based Access Control for service accounts
-- **Encrypted Storage**: EBS volumes are encrypted at rest
-- **IAM Roles**: Least privilege IAM roles for EKS services
-- **Traffic Encryption**: All inter-service communication encrypted by default
+   - Kiali: Service mesh visualisation and configuration management
+   - Grafana: Metrics dashboards with Prometheus data source
+   - Jaeger: Distributed tracing and request flow analysis
+   - Prometheus: Metrics collection from all Envoy sidecars
+   - External Access**: All dashboards accessible via Istio Gateway on dedicated ports
