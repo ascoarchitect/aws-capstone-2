@@ -348,7 +348,7 @@ if [ "$IS_SWITCH" = false ]; then
     apply_with_spinner "k8s/configmap.yaml" "Applying ConfigMap..."
 
     # Apply PVC
-    apply_with_spinner "k8s/postgres-pvc.yaml" "Creating PVC..."
+    apply_with_spinner "k8s/postgres-pvc.yaml" "Creating PVC..."    
 
     # Apply secrets
     apply_with_spinner "k8s/postgres-secret.yaml" "Applying secrets..."
@@ -374,6 +374,7 @@ if [ "$IS_SWITCH" = false ]; then
     print_info "Deploying Istio Service Mesh configurations..."
     apply_with_spinner "istio/gateway.yaml" "Applying Istio Gateway..."
     apply_with_spinner "istio/destination-rules.yaml" "Applying Destination Rules..."
+    apply_with_spinner "istio/jaeger-tracing-config.yaml" "Applying Jaeger configuration..."
     apply_with_spinner "istio/security-policies.yaml" "Applying Security Policies..."
     apply_with_spinner "istio/telemetry.yaml" "Applying Telemetry Configuration..."
     apply_with_spinner "istio/observability-gateway.yaml" "Applying Observability Gateway..."
