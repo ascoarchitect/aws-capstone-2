@@ -56,8 +56,13 @@ run_with_spinner() {
     
     echo -n -e "${BLUE}[⚡]${NC} $message"
     
-    # Run command in background and capture exit code
-    eval "$command" >/dev/null 2>&1 &
+    # Temporarily disable 'set -e' to handle errors gracefully
+    set +e
+    
+    # Create temporary files for output
+    local stdout_file=$(mktemp)
+    local stderr_file=$(mktemp)
+    eval "$command" >"$stdout_file" 2>"$stderr_file" &
     local pid=$!
     
     # Show spinner while command runs
@@ -67,14 +72,29 @@ run_with_spinner() {
     wait $pid
     local exit_code=$?
     
+    # Re-enable 'set -e'
+    set -e
+    
     # Clear the line and show result
     printf "\r"
     if [ $exit_code -eq 0 ]; then
         print_status "$message"
     else
         print_error "$message (failed)"
-        return $exit_code
+        if [ -f "$stderr_file" ] && [ -s "$stderr_file" ]; then
+            echo -e "${RED}Error details:${NC}"
+            cat "$stderr_file" | head -10  # Show first 10 lines of error
+            echo ""
+        fi
+        print_error "Bootstrap failed. Exiting..."
+        
+        # Clean up temporary files before exit
+        rm -f "$stdout_file" "$stderr_file"
+        exit 1
     fi
+    
+    # Clean up temporary files
+    rm -f "$stdout_file" "$stderr_file"
 }
 
 # Update package manager
