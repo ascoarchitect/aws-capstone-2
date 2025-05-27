@@ -44,7 +44,7 @@ managedNodeGroups:
     instanceTypes: ["t3.medium"]
     minSize: 1
     desiredCapacity: 2
-    maxSize: 3
+    maxSize: 5
     volumeEncrypted: true
     privateNetworking: true
     iam:
