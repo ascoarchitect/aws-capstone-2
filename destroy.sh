@@ -104,11 +104,28 @@ if kubectl get namespace $NAMESPACE >/dev/null 2>&1; then
     # Delete all resources in namespace
     run_with_spinner "Deleting all resources in namespace..." "kubectl delete all --all -n $NAMESPACE --timeout=60s"
     
+    # Delete Istio configurations
+    run_with_spinner "Deleting Istio configurations..." "kubectl delete vs,dr,gw,pa,ap,telemetry --all -n $NAMESPACE --timeout=60s"
+    
     # Delete namespace
     run_with_spinner "Deleting namespace..." "kubectl delete namespace $NAMESPACE --timeout=60s"
     print_status "Kubernetes resources deleted"
 else
     print_info "Namespace not found, skipping Kubernetes cleanup"
+fi
+
+# Delete Istio observability configurations
+print_info "Deleting Istio observability configurations..."
+run_with_spinner "Deleting observability gateway..." "kubectl delete vs,gw observability-gateway kiali-vs grafana-vs jaeger-vs -n istio-system --timeout=60s || true"
+
+# Uninstall Istio
+print_info "Uninstalling Istio..."
+if kubectl get namespace istio-system >/dev/null 2>&1; then
+    run_with_spinner "Uninstalling Istio..." "istioctl uninstall --purge -y"
+    run_with_spinner "Deleting Istio namespace..." "kubectl delete namespace istio-system --timeout=120s || true"
+    print_status "Istio uninstalled"
+else
+    print_info "Istio not found"
 fi
 
 # Delete EKS cluster

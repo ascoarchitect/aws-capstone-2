@@ -4,7 +4,7 @@ metadata:
   name: game-service
   namespace: dos-game
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: dos-game
   ports:

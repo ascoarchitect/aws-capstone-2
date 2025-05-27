@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-ingressgateway
+  namespace: istio-system
+  labels:
+    app: istio-ingressgateway
+    istio: ingressgateway
+spec:
+  type: LoadBalancer
+  selector:
+    app: istio-ingressgateway
+    istio: ingressgateway
+  ports:
+  - name: status-port
+    port: 15021
+    protocol: TCP
+    targetPort: 15021
+  - name: http2
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: 8443
+  - name: kiali
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: grafana
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  - name: jaeger
+    port: 8082
+    protocol: TCP
+    targetPort: 8082

@@ -1,0 +1,49 @@
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: metrics
+  namespace: dos-game
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        destination_app:
+          value: "%{LABELS['app'] | 'unknown'}"
+        destination_version:
+          value: "%{LABELS['version'] | 'unknown'}"
+        source_app:
+          value: "%{SOURCE_LABELS['app'] | 'unknown'}"
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: access-logs
+  namespace: dos-game
+spec:
+  accessLogging:
+  - providers:
+    - name: otel
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: tracing
+  namespace: dos-game
+spec:
+  tracing:
+  - providers:
+    - name: jaeger
+  - customTags:
+      http.url:
+        header:
+          name: ":path"
+      user_agent:
+        header:
+          name: "user-agent"
+      request_id:
+        header:
+          name: "x-request-id"

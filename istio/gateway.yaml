@@ -1,0 +1,55 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: dos-games-gateway
+  namespace: dos-game
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: dos-games-virtualservice
+  namespace: dos-game
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - dos-games-gateway
+  http:
+  - match:
+    - port: 80
+      uri:
+        prefix: /api
+    route:
+    - destination:
+        host: stats-api-service
+        port:
+          number: 3001
+    timeout: 30s
+    headers:
+      request:
+        add:
+          x-forwarded-proto: http
+  - match:
+    - port: 80
+      uri:
+        prefix: /
+    route:
+    - destination:
+        host: game-service
+        port:
+          number: 80
+    timeout: 30s
+    headers:
+      request:
+        add:
+          x-forwarded-proto: http

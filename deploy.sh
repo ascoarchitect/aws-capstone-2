@@ -77,16 +77,13 @@ run_with_spinner() {
 # Check command line arguments
 if [ $# -eq 0 ]; then
     print_error "No command specified"
-    echo "Usage: $0 [doom|civ|switch|kiali|grafana|jaeger]"
+    echo "Usage: $0 [doom|civ|switch]"
     echo "  Game Commands:"
     echo "    doom     - Deploy with DOOM"
     echo "    civ      - Deploy with Civilization"
     echo "    switch   - Switch between games (blue/green)"
     echo ""
-    echo "  Observability Commands:"
-    echo "    kiali    - Open Kiali dashboard (service mesh visualization)"
-    echo "    grafana  - Open Grafana dashboard (metrics and monitoring)"
-    echo "    jaeger   - Open Jaeger dashboard (distributed tracing)"
+    echo "Note: Observability tools (Kiali, Grafana, Jaeger) are automatically deployed with the main stack"
     exit 1
 fi
 
@@ -140,148 +137,6 @@ get_dashboard_urls() {
     fi
 }
 
-# Function to open Kiali dashboard
-open_kiali() {
-    print_header "Kiali Dashboard"
-    
-    if ! check_istio_ready; then
-        exit 1
-    fi
-    
-    if ! check_service_available "kiali" "istio-system"; then
-        print_error "Kiali is not available. Installing Kiali..."
-        run_with_spinner "Installing Kiali..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/kiali.yaml"
-        
-        print_info "Waiting for Kiali to be ready..."
-        run_with_spinner "Waiting for Kiali..." "kubectl wait --for=condition=available --timeout=300s deployment/kiali -n istio-system"
-    fi
-    
-    # Ensure observability gateway is applied
-    run_with_spinner "Applying observability gateway..." "kubectl apply -f istio/observability-gateway.yaml"
-    
-    # Get gateway URL
-    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-    
-    print_status "Kiali is ready"
-    print_info "Kiali provides service mesh visualization, traffic flow, and configuration validation"
-    echo ""
-    
-    if [ ! -z "$URL" ]; then
-        print_status "Kiali dashboard is accessible externally at:"
-        echo "  🌐 http://$URL:8080"
-        echo ""
-    else
-        print_info "LoadBalancer URL not ready yet. You can also access via port-forward:"
-        print_info "Dashboard will be available at: http://localhost:20001"
-        print_info "Press Ctrl+C to stop the port-forward"
-        echo ""
-        
-        # Start port-forward as fallback
-        kubectl port-forward -n istio-system svc/kiali 20001:20001
-    fi
-}
-
-# Function to open Grafana dashboard
-open_grafana() {
-    print_header "Grafana Dashboard"
-    
-    if ! check_istio_ready; then
-        exit 1
-    fi
-    
-    if ! check_service_available "grafana" "istio-system"; then
-        print_error "Grafana is not available. Installing Grafana..."
-        run_with_spinner "Installing Prometheus..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/prometheus.yaml"
-        run_with_spinner "Installing Grafana..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/grafana.yaml"
-        
-        print_info "Waiting for Grafana to be ready..."
-        run_with_spinner "Waiting for Grafana..." "kubectl wait --for=condition=available --timeout=300s deployment/grafana -n istio-system"
-    fi
-    
-    # Ensure observability gateway is applied
-    run_with_spinner "Applying observability gateway..." "kubectl apply -f istio/observability-gateway.yaml"
-    
-    # Get gateway URL
-    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-    
-    print_status "Grafana is ready"
-    print_info "Grafana provides metrics visualization and monitoring dashboards"
-    echo ""
-    
-    if [ ! -z "$URL" ]; then
-        print_status "Grafana dashboard is accessible externally at:"
-        echo "  🌐 http://$URL:8081"
-        echo ""
-        print_info "Default credentials: admin/admin"
-    else
-        print_info "LoadBalancer URL not ready yet. You can also access via port-forward:"
-        print_info "Dashboard will be available at: http://localhost:3000"
-        print_info "Default credentials: admin/admin"
-        print_info "Press Ctrl+C to stop the port-forward"
-        echo ""
-        
-        # Start port-forward as fallback
-        kubectl port-forward -n istio-system svc/grafana 3000:3000
-    fi
-}
-
-# Function to open Jaeger dashboard
-open_jaeger() {
-    print_header "Jaeger Dashboard"
-    
-    if ! check_istio_ready; then
-        exit 1
-    fi
-    
-    if ! check_service_available "jaeger" "istio-system"; then
-        print_error "Jaeger is not available. Installing Jaeger..."
-        run_with_spinner "Installing Jaeger..." "kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-$ISTIO_RELEASE/samples/addons/jaeger.yaml"
-        
-        print_info "Waiting for Jaeger to be ready..."
-        run_with_spinner "Waiting for Jaeger..." "kubectl wait --for=condition=available --timeout=300s deployment/jaeger -n istio-system"
-    fi
-    
-    # Ensure observability gateway is applied
-    run_with_spinner "Applying observability gateway..." "kubectl apply -f istio/observability-gateway.yaml"
-    
-    # Get gateway URL
-    URL=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-    
-    print_status "Jaeger is ready"
-    print_info "Jaeger provides distributed tracing and request flow analysis"
-    echo ""
-    
-    if [ ! -z "$URL" ]; then
-        print_status "Jaeger dashboard is accessible externally at:"
-        echo "  🌐 http://$URL:8082"
-        echo ""
-    else
-        print_info "LoadBalancer URL not ready yet. You can also access via port-forward:"
-        print_info "Dashboard will be available at: http://localhost:16686"
-        print_info "Press Ctrl+C to stop the port-forward"
-        echo ""
-        
-        # Start port-forward as fallback
-        kubectl port-forward -n istio-system svc/jaeger 16686:16686
-    fi
-}
-
-# Handle observability dashboard commands
-case "$GAME" in
-    "kiali")
-        open_kiali
-        exit 0
-        ;;
-    "grafana")
-        open_grafana
-        exit 0
-        ;;
-    "jaeger")
-        open_jaeger
-        exit 0
-        ;;
-esac
-
 # Function to get current game
 get_current_game() {
     kubectl get deployment game-deployment -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null | grep -o '[^:]*$' || echo "none"
@@ -304,12 +159,27 @@ fi
 # Validate game selection
 if [ "$GAME" != "doom" ] && [ "$GAME" != "civ" ] && [ "$GAME" != "switch" ]; then
     print_error "Invalid command: $GAME"
-    echo "Valid options: doom, civ, switch, kiali, grafana, jaeger"
+    echo "Valid options: doom, civ, switch"
     exit 1
 fi
 
 print_header "AWS Kubernetes Capstone 2 - Deploy"
 print_info "Deploying with game: $GAME"
+
+# Check prerequisites
+print_info "Checking prerequisites..."
+
+# Check if istioctl is installed
+if ! command -v istioctl &> /dev/null; then
+    print_error "istioctl is not installed"
+    print_info "Please install Istio CLI:"
+    echo "  curl -L https://istio.io/downloadIstio | sh -"
+    echo "  export PATH=\$PWD/istio-${ISTIO_RELEASE}/bin:\$PATH"
+    echo "  Or visit: https://istio.io/latest/docs/setup/getting-started/"
+    exit 1
+fi
+
+print_status "Prerequisites check completed"
 
 # Check if cluster exists
 print_info "Checking EKS cluster status..."
@@ -343,7 +213,18 @@ else
     print_info "Waiting for Istio components to be ready..."
     run_with_spinner "Waiting for Istio control plane..." "kubectl wait --for=condition=ready pod -l app=istiod -n istio-system --timeout=300s"
     
-    print_status "Istio Service Mesh installed successfully"
+    # Wait for observability components to be ready
+    print_info "Waiting for observability components to be ready..."
+    run_with_spinner "Waiting for Kiali..." "kubectl wait --for=condition=available --timeout=300s deployment/kiali -n istio-system"
+    run_with_spinner "Waiting for Grafana..." "kubectl wait --for=condition=available --timeout=300s deployment/grafana -n istio-system"
+    run_with_spinner "Waiting for Jaeger..." "kubectl wait --for=condition=available --timeout=300s deployment/jaeger -n istio-system"
+    run_with_spinner "Waiting for Prometheus..." "kubectl wait --for=condition=available --timeout=300s deployment/prometheus -n istio-system"
+    
+    # Apply observability ports configuration to ingress gateway
+    print_info "Configuring observability ports on ingress gateway..."
+    run_with_spinner "Applying ingress gateway service configuration..." "kubectl apply -f istio/ingress-gateway-service.yaml"
+    
+    print_status "Istio Service Mesh with observability tools installed successfully"
 fi
 
 # Verify ECR repositories and images exist
@@ -599,16 +480,6 @@ echo "  kubectl get vs,dr,gw -n $NAMESPACE      # View Istio configs"
 echo "  kubectl get pods -n istio-system        # View Istio components"
 echo "  istioctl proxy-status                   # Check sidecar status"
 echo "  istioctl analyze                        # Analyze configuration"
-echo ""
-echo "  # Observability Dashboards (Easy Access)"
-echo "  ./deploy.sh kiali                        # Open Kiali dashboard (service mesh visualization)"
-echo "  ./deploy.sh grafana                      # Open Grafana dashboard (metrics and monitoring)"
-echo "  ./deploy.sh jaeger                       # Open Jaeger dashboard (distributed tracing)"
-echo ""
-echo "  # Manual Port-Forward (Alternative)"
-echo "  kubectl port-forward -n istio-system svc/kiali 20001:20001    # Manual Kiali access"
-echo "  kubectl port-forward -n istio-system svc/grafana 3000:3000    # Manual Grafana access"
-echo "  kubectl port-forward -n istio-system svc/jaeger 16686:16686   # Manual Jaeger access"
 echo ""
 echo "  # Cleanup"
 echo "  ./destroy.sh                             # Clean up all resources"

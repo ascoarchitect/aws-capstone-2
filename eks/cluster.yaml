@@ -20,11 +20,6 @@ iam:
       namespace: kube-system
     wellKnownPolicies:
       autoScaler: true
-  - metadata:
-      name: aws-load-balancer-controller-dos-games
-      namespace: kube-system
-    wellKnownPolicies:
-      awsLoadBalancerController: true
 
 addons:
   - name: vpc-cni
@@ -49,7 +44,6 @@ managedNodeGroups:
     privateNetworking: true
     iam:
       withAddonPolicies:
-        albIngress: true
         cloudWatch: true
         autoScaler: true
         ebs: true

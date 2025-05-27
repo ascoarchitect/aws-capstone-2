@@ -151,6 +151,22 @@ else
     print_status "eksctl installed"
 fi
 
+# Install Istio CLI
+if command_exists istioctl; then
+    CURRENT_VERSION=$(istioctl version --client --short 2>/dev/null | head -1)
+    print_status "Istio CLI is already installed: $CURRENT_VERSION"
+else
+    print_info "Installing Istio CLI..."
+    ISTIO_VERSION="1.26.0"
+    cd /tmp
+    run_with_spinner "Downloading Istio $ISTIO_VERSION..." "curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION sh -"
+    run_with_spinner "Installing istioctl..." "sudo mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/"
+    run_with_spinner "Cleaning up Istio download..." "rm -rf istio-$ISTIO_VERSION"
+    cd - >/dev/null
+    print_status "Istio CLI installed"
+    print_info "Version: $(istioctl version --client --short 2>/dev/null | head -1)"
+fi
+
 # Verify AWS credentials
 print_info "Checking AWS credentials..."
 if aws sts get-caller-identity >/dev/null 2>&1; then
@@ -220,6 +236,11 @@ echo "======================================"
 echo -e "${GREEN}Bootstrap completed successfully!${NC}"
 echo "======================================"
 echo ""
+print_info "Environment setup complete:"
+echo "   ✓ All required tools installed (Docker, AWS CLI, kubectl, eksctl, Istio CLI v1.26.0)"
+echo "   ✓ Docker images built and pushed to ECR"
+echo "   ✓ AWS credentials verified"
+echo ""
 echo "Next steps:"
 echo "1. Run ./deploy.sh doom  # To deploy EKS cluster with DOOM"
 echo "2. Run ./deploy.sh civ   # To deploy EKS cluster with Civilization"
@@ -230,4 +251,4 @@ echo "   - $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:doom"
 echo "   - $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:civ"
 echo "   - $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$STATS_REPO_NAME:latest"
 echo ""
-print_info "All Docker images are now ready for EKS deployment!"
+print_info "Ready for Istio Service Mesh deployment with observability tools!"

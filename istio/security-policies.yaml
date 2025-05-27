@@ -1,0 +1,61 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: dos-game
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: game-access-policy
+  namespace: dos-game
+spec:
+  selector:
+    matchLabels:
+      app: dos-game
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+  - to:
+    - operation:
+        methods: ["GET", "POST"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: stats-api-access-policy
+  namespace: dos-game
+spec:
+  selector:
+    matchLabels:
+      app: stats-api
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    - source:
+        principals: ["cluster.local/ns/dos-game/sa/default"]
+  - to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: postgres-access-policy
+  namespace: dos-game
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/dos-game/sa/default"]
+  - to:
+    - operation:
+        ports: ["5432"]
