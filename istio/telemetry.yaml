@@ -1,9 +1,12 @@
 apiVersion: telemetry.istio.io/v1alpha1
 kind: Telemetry
 metadata:
-  name: metrics
+  name: game-telemetry
   namespace: dos-game
 spec:
+  selector:
+    matchLabels:
+      app: dos-game
   metrics:
   - providers:
     - name: prometheus
@@ -17,27 +20,13 @@ spec:
           value: "%{LABELS['version'] | 'unknown'}"
         source_app:
           value: "%{SOURCE_LABELS['app'] | 'unknown'}"
----
-apiVersion: telemetry.istio.io/v1alpha1
-kind: Telemetry
-metadata:
-  name: access-logs
-  namespace: dos-game
-spec:
   accessLogging:
   - providers:
     - name: otel
----
-apiVersion: telemetry.istio.io/v1alpha1
-kind: Telemetry
-metadata:
-  name: tracing
-  namespace: dos-game
-spec:
   tracing:
   - providers:
     - name: jaeger
-  - customTags:
+    customTags:
       http.url:
         header:
           name: ":path"
