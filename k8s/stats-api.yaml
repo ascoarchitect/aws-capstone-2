@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: stats-api
+        version: v1
     spec:
       containers:
       - name: stats-api
