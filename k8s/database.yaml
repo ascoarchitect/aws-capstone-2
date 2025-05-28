@@ -12,10 +12,12 @@ spec:
     metadata:
       labels:
         app: postgres
+        version: "17"
+        
     spec:
       containers:
       - name: postgres
-        image: postgres:15-alpine
+        image: postgres:17-alpine
         imagePullPolicy: Always
         ports:
         - containerPort: 5432
