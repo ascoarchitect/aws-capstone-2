@@ -181,6 +181,16 @@ else
     exit 1
 fi
 
+# Check if region is configured as eu-west-1
+if [ "$REGION" != "eu-west-1" ]; then
+    print_error "AWS region must be configured as eu-west-1"
+    print_info "Current region: ${REGION:-"not configured"}"
+    print_info "Please run: aws configure set region eu-west-1"
+    exit 1
+fi
+
+print_status "AWS region confirmed: eu-west-1"
+
 # Create ECR repositories
 print_info "Setting up ECR repositories..."
 REPO_NAME="dos-games"

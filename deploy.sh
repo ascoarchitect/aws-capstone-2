@@ -94,6 +94,16 @@ CLUSTER_NAME="dos-games"
 NAMESPACE="dos-game"
 ISTIO_RELEASE="1.26"
 
+# Check if region is configured as eu-west-1
+if [ "$REGION" != "eu-west-1" ]; then
+    print_error "AWS region must be configured as eu-west-1"
+    print_info "Current region: ${REGION:-"not configured"}"
+    print_info "Please run: aws configure set region eu-west-1"
+    exit 1
+fi
+
+print_status "AWS region confirmed: eu-west-1"
+
 # Function to check if Istio is installed and ready
 check_istio_ready() {
     if ! kubectl get namespace istio-system >/dev/null 2>&1; then
